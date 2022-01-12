@@ -1,0 +1,46 @@
+version: '3.6'
+services:
+  # nextjs:
+  #   build:
+  #     context: .
+  #     dockerfile: ./Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - "postgres"
+  #   links:
+  #     - hasura
+  #   environment:
+  #     HASURA_GRAPHQL_ADMIN_SECRET: hasurapassword
+  #     HASURA_GRAPHQL_URL: http://hasura:8080/v1/graphql
+  #   restart: always
+  postgres:
+    image: postgres:12
+    restart: always
+    ports:
+      - "5435:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgrespassword
+  hasura:
+    build:
+      context: ./packages/hasura
+      dockerfile: ./Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - "postgres"
+    restart: always
+    environment:
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: "anonymous"
+      HASURA_GRAPHQL_ADMIN_SECRET: hasurapassword
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/postgres
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      HASURA_GRAPHQL_JWT_SECRET: '{"type": "RS256","jwk_url": "http://host.docker.internal:3000/api/auth/jwks"}'
+    volumes:
+      - "./packages/hasura/migrations:/hasura-migrations"
+volumes:
+  db_data:
